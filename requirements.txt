@@ -1,3 +1,5 @@
 fastapi
 sqlmodel
 sqlalchemy-utils
+aiosqlite
+strawberry-graphql[fastapi]

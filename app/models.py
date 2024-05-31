@@ -1,60 +1,52 @@
 from typing import List, Optional
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
-from sqlmodel import Field, Relationship, SQLModel
-
-
-class PerguntaAlternativaLink(SQLModel, table=True):
-    pergunta_id: Optional[int] = Field(default=None, foreign_key="pergunta.id", primary_key=True)
-    alternativa_id: Optional[int] = Field(default=None, foreign_key="alternativa.id", primary_key=True)
-
-
-class QuestionarioBase(SQLModel):
-    nome: str = Field(index=True)
-    descricao: Optional[str] = Field(default=None)
+from sqlalchemy import Column
+from sqlalchemy import Table
+from sqlalchemy import ForeignKey
 
 
-class Questionario(QuestionarioBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-    perguntas: List["Pergunta"] = Relationship(back_populates="questionario")
+class Base(DeclarativeBase):
+    pass
 
 
-class QuestionarioRead(QuestionarioBase):
-    id: int
+PerguntaAlternativaLink = Table(
+    "perguntaalternativalink",
+    Base.metadata,
+    Column("pergunta_id", ForeignKey("pergunta.id"), primary_key=True),
+    Column("alternativa_id", ForeignKey("alternativa.id"), primary_key=True),
+)
 
 
-class PergntaBase(SQLModel):
-    descricao: str = Field(index=True)
+class Questionario(Base):
+    __tablename__ = "questionario"
 
-    questionario_id: Optional[int] = Field(default=None, foreign_key="questionario.id")
-
-
-class Pergunta(PergntaBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-    questionario: Optional[Questionario] = Relationship(back_populates="perguntas")
-    alternativas: List["Alternativa"] = Relationship(back_populates="perguntas", link_model=PerguntaAlternativaLink)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nome: Mapped[str] = mapped_column(index=True)
+    descricao: Mapped[Optional[str]] = mapped_column(default=None)
+    perguntas: Mapped[List["Pergunta"]] = relationship(back_populates="questionario", lazy="joined")
 
 
-class AlternativaBase(SQLModel):
-    descricao: str = Field(index=True)
+class Pergunta(Base):
+    __tablename__ = "pergunta"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    descricao: Mapped[str] = mapped_column(index=True)
+
+    questionario_id: Mapped[int] = mapped_column(ForeignKey("questionario.id"))
+    questionario: Mapped[Optional[Questionario]] = relationship(back_populates="perguntas")
+    alternativas: Mapped[List["Alternativa"]] = relationship(
+        back_populates="perguntas", secondary=PerguntaAlternativaLink, lazy="joined"
+    )
 
 
-class Alternativa(AlternativaBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    descricao: str = Field(index=True)
+class Alternativa(Base):
+    __tablename__ = "alternativa"
 
-    perguntas: List[Pergunta] = Relationship(back_populates="alternativas", link_model=PerguntaAlternativaLink)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    descricao: Mapped[str] = mapped_column(index=True)
 
-
-class AlternativaRead(AlternativaBase):
-    id: int
-
-
-class PerguntaRead(PergntaBase):
-    id: int
-    alternativas: List[AlternativaRead]
-
-
-class QuestionarioReadComPerguntas(QuestionarioRead):
-    perguntas: List[PerguntaRead]
+    perguntas: Mapped[List[Pergunta]] = relationship(back_populates="alternativas", secondary=PerguntaAlternativaLink)
