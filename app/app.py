@@ -58,7 +58,6 @@ class Query:
         async with get_session() as session:
             sql = select(models.Questionario).order_by(models.Questionario.nome)
             if id is not None:
-                print("ola")
                 sql = sql.where(models.Questionario.id == id)
             db_produtos = (await session.execute(sql)).scalars().unique().all()
         return [Questionario.marshal(produto) for produto in db_produtos]
@@ -68,4 +67,4 @@ schema = strawberry.Schema(query=Query)
 graphql_app = GraphQLRouter(schema)
 
 app = FastAPI()
-app.include_router(graphql_app, prefix="/graphql")
+app.include_router(graphql_app, prefix="/questionarios")
